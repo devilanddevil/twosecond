@@ -1574,11 +1574,6 @@ class Core extends Hosting {
                     list($img_root_path, $img_root_url) = $this->twosecond_get_img_root_path();
                     $twoSecond_img_ext = '.' . pathinfo($imgnn_arr['src'], PATHINFO_EXTENSION);
                     
-                    // Enqueue responsive images for supported formats
-                    if(in_array($twoSecond_img_ext, ['.jpg', '.webp', '.jpeg', '.png'])){
-                        $this->twosecond_enque_responsive_image($imgnn_arr['src']);
-                    }
-                    
                     $imgsrc_filepath = $this->twosecond_get_resource_root_path($imgnn_arr['src'], $img_root_url, $img_root_path);
                     $imgnn = trim(preg_replace('/\s+/', ' ', $imgnn));
                     
@@ -1590,7 +1585,8 @@ class Core extends Hosting {
                     
                     // Handle mobile responsive images
                     if (!empty($this->addSettings['is_mobile']) && !empty($this->settings['resp_bg_img']) && !$this->twosecond_exclude_image_from_convert_to_webp($imgsrc_filepath)) {
-                        if (!empty($img_size[0]) && $img_size[0] > 600) {
+                        if (!empty($img_size[0]) && $img_size[0] > 400) {
+                            $this->twosecond_enque_responsive_image($imgnn_arr['src']);
                             [$imgnn_arr, $imgsrc_filepath] = $this->twosecond_convert_to_smaller_image($img_root_path, $imgsrc_filepath, $imgnn_arr);
                         }
                     }
@@ -1603,23 +1599,27 @@ class Core extends Hosting {
                     }
                     
                     // Handle WebP conversion
-                    if (count($webp_enable) > 0 && in_array($twoSecond_img_ext, $webp_enable) && !$this->twosecond_exclude_image_from_convert_to_webp($imgsrc_filepath)) {
-                        $imgsrc_webpfilepath = $this->twosecond_get_img_webp_path($img_root_path, $imgsrc_filepath);
-                        if (file_exists($imgsrc_webpfilepath)) {
-                            $imgnn_arr['src'] = $this->twosecond_convert_to_webp($imgnn_arr['src']);
-                        } else {
-                            $this->webpEnqueImageUrls[] = $imgnn_arr['src'];
-                        }
-                        
-                        // Convert srcset to WebP if available
-                        if (strpos($imgnn, ' srcset=') !== false) {
-                            if(strpos($imgnn_arr['src'], '-595xh.webp') !== false){
-                                $imgnn_arr['srcset'] = '';
-                            } else {
-                                $imgnn_arr['srcset'] = $this->twosecond_srcset_to_webp($imgnn_arr['srcset'], $img_root_url, $img_root_path);
+                    if (count($webp_enable) > 0 && !$this->twosecond_exclude_image_from_convert_to_webp($imgsrc_filepath)) {
+                        foreach($imgnn_arr as $attrName => $attrValue){
+                            if(empty($attrValue)) continue;
+                            $attrExt = '.' . pathinfo($attrValue, PATHINFO_EXTENSION);
+                            if(in_array($attrExt, $webp_enable)){
+                                if(strpos($attrName, 'srcset') !== false){
+                                    if(strpos($imgnn_arr['src'], '-595xh.webp') !== false){
+                                        $imgnn_arr[$attrName] = '';
+                                    } else {
+                                        $imgnn_arr[$attrName] = $this->twosecond_srcset_to_webp($attrValue, $img_root_url, $img_root_path);
+                                    }
+                                } else {
+                                    $imgsrc_webpfilepath_attr = $this->twosecond_get_img_webp_path($img_root_path, $this->twosecond_get_resource_root_path($attrValue, $img_root_url, $img_root_path));
+                                    if (file_exists($imgsrc_webpfilepath_attr)) {
+                                        $imgnn_arr[$attrName] = $this->twosecond_convert_to_webp($attrValue);
+                                    } else {
+                                        $this->webpEnqueImageUrls[] = $attrValue;
+                                    }
+                                }
                             }
                         }
-
                     }
                 }
                 
@@ -2299,9 +2299,9 @@ class Core extends Hosting {
                         }
                         $this->twosecond_preload_font_from_critical($critical_css_modified);
                         if (!empty($this->settings['load_critical_css_style_tag'])) {
-                            $critical_css_modified = preg_replace('/\/\*\s*<bsimages>.*?<\/bsimages>\s*\*\//s', '', $critical_css_modified);
+                            $critical_css_modified = preg_replace('/\/\*\s*<tsimages>.*?<\/tsimages>\s*\*\//s', '', $critical_css_modified);
                             $critical_css_modified = preg_replace('/\/\*\s*<twosecond_elements>.*?<\/twosecond_elements>\s*\*\//s', '', $critical_css_modified);
-                            $critical_css_modified = preg_replace('/\/\*\s*<bsDataBgLoad>.*?<\/bsDataBgLoad>\s*\*\//s', '', $critical_css_modified);
+                            $critical_css_modified = preg_replace('/\/\*\s*<tsDataBgLoad>.*?<\/tsDataBgLoad>\s*\*\//s', '', $critical_css_modified);
                             $criticalReplace[0] = array('data-css="1" ', '{{main_twosecond_critical_css}}');
                             $criticalReplace[1] = array('data-', '<style id="twosecond-critical-css">' . $critical_css_modified . '</style>');
                             $this->addSettings['preload_resources']['critical_css'] = 1;
@@ -3382,10 +3382,10 @@ class Core extends Hosting {
             return;
         }
         $css = $data['w3_css'];
-        $bsimages            = $data['bsimages'] ?? $data['w3images'] ?? null;
+        $tsimages            = $data['tsimages'] ?? $data['bsimages'] ?? $data['w3images'] ?? null;
         $twosecond_elements = $data['twosecond_elements'] ?? $data['w3elements'] ?? null;
-        if ( ! empty( $bsimages ) && is_array( $bsimages ) && count( $bsimages ) ) {
-            $css .= '/* <bsimages>' . implode( ',', $bsimages ) . '</bsimages> */';
+        if ( ! empty( $tsimages ) && is_array( $tsimages ) && count( $tsimages ) ) {
+            $css .= '/* <tsimages>' . implode( ',', $tsimages ) . '</tsimages> */';
         }
         if ( ! empty( $twosecond_elements ) && is_array( $twosecond_elements ) && count( $twosecond_elements ) ) {
             $css .= '/* <twosecond_elements>' . implode( ',', $twosecond_elements ) . '</twosecond_elements> */';
@@ -3718,9 +3718,9 @@ class Core extends Hosting {
         $criticalPath = $this->twosecond_preload_css_path() . '/' . $this->addSettings['critical_css'];
         if ( file_exists( $criticalPath ) ) {
             $criticalCss = file_get_contents( $criticalPath ); // local file
-            $data = $this->twosecond_get_tags_data($criticalCss, '<bsimages>', '</bsimages>');
+            $data = $this->twosecond_get_tags_data($criticalCss, '<tsimages>', '</tsimages>');
             if(!empty($data)){
-                $data = str_replace('<bsimages>', '', str_replace('</bsimages>', '', $data));
+                $data = str_replace('<tsimages>', '', str_replace('</tsimages>', '', $data));
                 if(!empty($data[0])){
                     $preloadImages = explode(',', $data[0]);
                     $preloadImages = array_map(function($url){
@@ -3795,7 +3795,10 @@ class Core extends Hosting {
             }
             $img595src_webpfilepath = $this->twosecond_get_img_webp_path595xh($imgsrc_webpfilepath,$imgsrc_filepath);
             if($this->addSettings['is_mobile'] && !empty($this->settings['resp_bg_img']) && file_exists($img595src_webpfilepath)){
-                $src = $this->twosecond_get_media_resource_url($img595src_webpfilepath);
+                $img_size = $this->twosecond_get_image_size($imgsrc_filepath);
+                if (!empty($img_size[0]) && $img_size[0] > 400) {
+                    $src = $this->twosecond_get_media_resource_url($img595src_webpfilepath);
+                }
             }
             $src = str_replace('$ts$','', $src);
             if ($this->twosecond_check_enable_cdn('image') && !$this->twosecond_check_excluded_path($src, $this->addSettings['image_exclude_cdn_path'])) {
@@ -4002,7 +4005,7 @@ class Core extends Hosting {
         $criticalFile = $this->twosecond_preload_css_path() . '/' . $this->addSettings['critical_css'];
         if(is_file($criticalFile) && !empty($css)){
             $critical_css = $this->twosecond_get_contents($criticalFile);
-            $critical_css .= '/* <bsDataBgLoad>'.$css.'</bsDataBgLoad> */';
+            $critical_css .= '/* <tsDataBgLoad>'.$css.'</tsDataBgLoad> */';
             $this->twosecond_create_file($criticalFile, $critical_css);
             return true;
         }
@@ -4018,9 +4021,9 @@ class Core extends Hosting {
         $criticalFile = $this->twosecond_preload_css_path() . '/' . $this->addSettings['critical_css'];
         if(is_file($criticalFile)){
             $criticalCss = $this->twosecond_get_contents($criticalFile);
-            $data = $this->twosecond_get_tags_data($criticalCss, '<bsDataBgLoad>', '</bsDataBgLoad>');
+            $data = $this->twosecond_get_tags_data($criticalCss, '<tsDataBgLoad>', '</tsDataBgLoad>');
             if(!empty($data[0])){
-                $data[0] = str_replace('<bsDataBgLoad>', '', str_replace('</bsDataBgLoad>', '', $data[0]));
+                $data[0] = str_replace('<tsDataBgLoad>', '', str_replace('</tsDataBgLoad>', '', $data[0]));
                 if(!empty($data[0])){
                     return $data[0];
                 }
@@ -5237,17 +5240,13 @@ class Core extends Hosting {
                     list($img_root_path, $img_root_url) = $this->twosecond_get_img_root_path();
                     $twoSecond_img_ext = '.' . pathinfo($imgnn, PATHINFO_EXTENSION);
                     
-                    if(in_array($twoSecond_img_ext, ['.jpg', '.webp', '.jpeg', '.png'])){
-                        $this->twosecond_enque_responsive_image($imgnn);
-                    }
-                    
                     $imgsrc_filepath = $this->twosecond_get_resource_root_path($imgnn, $img_root_url, $img_root_path);
                     $imgnn = trim(preg_replace('/\s+/', ' ', $imgnn));
-                    
                     $img_size = $this->twosecond_get_image_size($imgsrc_filepath);
                     
                     if (!empty($this->addSettings['is_mobile']) && !empty($this->settings['resp_bg_img'])) {
-                        if (!empty($img_size[0]) && $img_size[0] > 600) {
+                        if (!empty($img_size[0]) && $img_size[0] > 400) {
+                            $this->twosecond_enque_responsive_image($imgnn);
                             [$imgnn_arr, $imgsrc_filepath] = $this->twosecond_convert_to_smaller_image($img_root_path, $imgsrc_filepath, []);
                             $imgnn = !empty($imgnn_arr['src']) ? $imgnn_arr['src'] : $imgnn;
                         }
@@ -5684,7 +5683,7 @@ class Core extends Hosting {
 	 * @param array $tokens MD5 page tokens that may have webp queue files.
 	 */
 	function twosecond_flush_webp_image_queue_for_tokens( $tokens ) {
-		$apiUrl = 'http://localhost:3000/imgopt/api/v2/index.php';
+		$apiUrl = $this->addSettings['api_url'] . '/imgopt/api/v2/index.php';
 		$states = $this->twosecond_load_webp_queue_states_for_tokens( $tokens );
 		if ( empty( $states ) ) {
 			return;

@@ -1492,7 +1492,7 @@ class TwoSecond extends Core
 			$tmp_ABSPATH = str_replace(" ", "\ ", $this->addSettings['document_root']);
 
 			$RewriteCond = "RewriteCond %{DOCUMENT_ROOT}/" . $basename . " -f [or]" . "\n";
-			$RewriteCond = $RewriteCond . "RewriteCond " . $tmp_ABSPATH . $wp_content_webp . "$1bs.webp -f" . "\n";
+			$RewriteCond = $RewriteCond . "RewriteCond " . $tmp_ABSPATH . $wp_content_webp . "$1.$2.webp -f" . "\n";
 		}
 
 		$data = "\n" . "# BEGIN TSWEBP" . "\n" .
@@ -1501,7 +1501,7 @@ class TwoSecond extends Core
 			"RewriteCond %{HTTP_ACCEPT} image/webp" . "\n" .
 			"RewriteCond %{REQUEST_URI} \.(jpe?g|png)" . "\n" .
 			$RewriteCond .
-			"RewriteRule ^" . $wp_content . "/([^/]+/.+)\.(jpe?g|png)$ /" . $wp_content_webp . "$1.webp [L]" . "\n" .
+			"RewriteRule ^" . $wp_content . "/([^/]+/.+)\.(jpe?g|png)$ /" . $wp_content_webp . "$1.$2.webp [L]" . "\n" .
 			"</IfModule>" . "\n" .
 			"<IfModule mod_headers.c>" . "\n" .
 			"Header append Vary Accept env=REDIRECT_accept" . "\n" .
