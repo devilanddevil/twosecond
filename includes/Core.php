@@ -175,7 +175,7 @@ class Core extends Hosting {
             }
         }
 
-        $this->addSettings['api_url'] = 'http://localhost:3000';
+        $this->addSettings['api_url'] = 'http://45.195.159.20:3000';
         $this->addSettings['http_user_agent'] = !empty($this->addSettings['twosecond_server']['HTTP_USER_AGENT']) ? $this->addSettings['twosecond_server']['HTTP_USER_AGENT'] : '';
 
         $this->addSettings['is_mobile'] = $this->twosecond_is_mobile_device();
@@ -1922,15 +1922,33 @@ class Core extends Hosting {
         if ($this->addSettings['is_multisite_sub_domain']) {
             $src = str_replace($this->addSettings['site_url'], $this->addSettings['network_site_url'], $src);
         }
-        if (strpos($src, $img_root_url) === false) {
+        
+        // Normalize schemes to prevent mismatch doubling
+        $normalized_src = preg_replace('/^https?\:/i', '', $src);
+        $normalized_root_url = preg_replace('/^https?\:/i', '', $img_root_url);
+        
+        if (strpos($normalized_src, $normalized_root_url) === false) {
             $src = str_replace(array('https://', 'http://'), $this->addSettings['site_url_array']['scheme'] . '://', $src);
             if(strpos($src,$this->addSettings['site_url_diff']) !== false){
                 $src = str_replace($this->addSettings['site_url_diff'],$this->addSettings['site_url_array']['host'],$src);
             }
         }
-        $path = $img_root_path . str_replace($img_root_url, '', $src);
+        
+        // Strip the root URL more safely
+        $src_path_only = str_replace($img_root_url, '', $src);
+        // If it still looks like an absolute URL after replacement, try without scheme
+        if (preg_match('/^https?:\/\//i', $src_path_only)) {
+             $src_path_only = str_replace($normalized_root_url, '', $normalized_src);
+        }
+
+        $path = $img_root_path . '/' . ltrim($src_path_only, '/');
         if (strpos($path, '..') !== false) {
             $path = $this->twosecond_remove_dot_path_segments($path);
+        }
+        // Remove potential double slashes
+        $path = str_replace('//', '/', $path);
+        if (strpos($path, ':/') !== false) {
+            $path = str_replace(':/', '://', $path); // restore scheme if accidentally mangled
         }
         return $path;
     }
@@ -2795,12 +2813,34 @@ class Core extends Hosting {
 	 */
     function twosecond_get_resource_url($css, $enable_cdn, $excluded = 0, $type = 'image')
     {
+        $css = trim($css);
         $cssNew = $css;
+        
+        // If it's already an absolute URL, don't prepend anything unless we're doing CDN replacement
+        $is_absolute = (strpos($css, 'http://') === 0 || strpos($css, 'https://') === 0 || strpos($css, '//') === 0);
+        
         if ($enable_cdn && !$this->twosecond_check_excluded_path($css, $this->addSettings[$type.'_exclude_cdn_path'] ?? [])) {
-            $cssNew = str_replace($this->addSettings['site_url_array']['host'], $this->addSettings[$type.'_url_array']['host'], (strpos($css, $this->addSettings['site_url_array']['host']) === false ? ($excluded ? $this->addSettings['site_url'] . '/' : $this->addSettings['cache_url'] . '/') . ltrim($css, '/') : $cssNew));
-        } elseif (strpos($css, $this->addSettings['site_url_array']['host']) === false && !$this->twosecond_is_external($css, [], $type)) {
-            $cssNew = ($excluded ? $this->addSettings['site_url'] : $this->addSettings['cache_url']) . '/' . ltrim($css, '/');
+            if ($is_absolute) {
+                $cssNew = str_replace($this->addSettings['site_url_array']['host'], $this->addSettings[$type.'_url_array']['host'], $css);
+            } else {
+                $base = ($excluded ? $this->addSettings['site_url'] : $this->addSettings['cache_url']);
+                $cssNew = rtrim($base, '/') . '/' . ltrim($css, '/');
+                $cssNew = str_replace($this->addSettings['site_url_array']['host'], $this->addSettings[$type.'_url_array']['host'], $cssNew);
+            }
+        } elseif (!$is_absolute && !$this->twosecond_is_external($css, [], $type)) {
+            $base = ($excluded ? $this->addSettings['site_url'] : $this->addSettings['cache_url']);
+            $cssNew = rtrim($base, '/') . '/' . ltrim($css, '/');
         }
+        
+        // Final safety: if we accidentally doubled the domain (even with space or %20), fix it
+        $cssNew = preg_replace('/(https?:\/\/[^\/]+\/?)(\s|%20)+\1/i', '$1', $cssNew);
+        // Also handle the case where it's domain + absolute URL
+        $cssNew = preg_replace('/(https?:\/\/[^\/]+\/?)(\s|%20)+https?:\/\//i', 'https://', $cssNew);
+        // Catch direct concatenation without slash if not caught by first regex
+        if (preg_match('/(https?:\/\/[^\/]+)\1/i', $cssNew, $matches)) {
+            $cssNew = str_replace($matches[1].$matches[1], $matches[1], $cssNew);
+        }
+
         return $cssNew;
     }
 
@@ -4552,6 +4592,7 @@ class Core extends Hosting {
 	 */
     function twosecond_custom_parse_url($src)
     {
+        $src = trim($src);
         if (!empty($this->addSettings['site_url_array']['path'])) {
             if (strpos($src, $this->addSettings['site_url_array']['host']) !== false) {
                 $src = str_replace($this->addSettings['site_url_array']['host'] . $this->addSettings['site_url_array']['path'], $this->addSettings['site_url_array']['host'], $src);
@@ -4560,7 +4601,7 @@ class Core extends Hosting {
             }
         }
         if (substr_count($src, '//') > 0) {
-            $src = substr($src, 0, 7) . str_replace('//', '/', substr($src, 7));
+            $src = preg_replace('/(?<!:)\/\//', '/', $src);
         }
         $src_arr = $this->twosecond_parse_url($src);
         return $src_arr;
@@ -4839,7 +4880,7 @@ class Core extends Hosting {
 
         foreach ($urlAttributes as $attrName) {
             if (preg_match('/(?:[\s>"]|^)' . preg_quote($attrName, '/') . '=["\']([^"\']+)["\']/i', $linkForUrlAttrs, $matches)) {
-                $link_arr[$attrName] = $matches[1];
+                $link_arr[$attrName] = trim($matches[1]);
             }
         }
         
@@ -5904,5 +5945,48 @@ class Core extends Hosting {
 
 	public function twosecond_exclude_image_from_convert_to_webp($path) {
         return apply_filters('twosecond_exclude_image_from_convert_to_webp', false, $path);
+	}
+
+	/**
+	 * Remote GET request
+	 *
+	 * @param string $url Url.
+	 * @param array $params Params.
+	 * @param bool $mobile Mobile.
+	 * @param bool $blocking Blocking.
+	 * @param string $output Output.
+	 * @return string
+	 */
+	function twosecond_remote_get($url, $params = array(), $mobile = false, $blocking = true, $output = 'body')
+	{	
+		$timeout = $blocking ? 15 : 3;
+		
+		// For GET requests, append parameters to the URL
+		if (!empty($params)) {
+			$url = add_query_arg($params, $url);
+		}
+
+		$options = array(
+			'method' => 'GET',
+			'timeout' => $timeout,
+			'redirection' => 5,
+			'sslverify' => false,
+			'httpversion' => '1.0',
+			'headers' => $mobile ? array('User-Agent' => 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Mobile Safari/537.36') : array('User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'),
+			'cookies' => array()
+		);
+
+		// Make the request using WordPress HTTP API
+		if (function_exists('wp_remote_get')) {
+			$response = wp_remote_get($url, $options);
+			if (!is_wp_error($response) && !empty($response['body'])) {
+				if ($output == 'body') {
+					return wp_remote_retrieve_body($response);
+				} else {
+					return wp_remote_retrieve_response_code($response);
+				}
+			}
+		}
+		return '';
 	}
 }

@@ -158,12 +158,18 @@ class CssOptimize extends TwoSecond {
 			}
 			$match_arr = $this->twosecond_custom_parse_url($match1);
 			if(substr($match1, 0, 1) == '/' || strpos($match1,'http') !== false){
-				if($this->addSettings['is_multisite_sub_domain']){
-					$match1 = file_exists($this->addSettings['document_root'].'/'.trim($match_arr['path'],'/')) ? $this->addSettings['network_site_url'].'/'.trim($match_arr['path'],'/') : $match1;
-				}else{
-					$match1 = file_exists($this->addSettings['document_root'].'/'.trim($match_arr['path'],'/')) ? $this->addSettings['domain_url'].'/'.trim($match_arr['path'],'/') : $match1;
+				if(strpos($match1,'http') !== false) {
+					// It's already an absolute URL, let's make sure it's not a broken one with spaces
+					$match1 = trim($match1);
+					$import_match = $match1;
+				} else {
+					if($this->addSettings['is_multisite_sub_domain']){
+						$match1 = file_exists($this->addSettings['document_root'].'/'.trim($match_arr['path'],'/')) ? $this->addSettings['network_site_url'].'/'.trim($match_arr['path'],'/') : $match1;
+					}else{
+						$match1 = file_exists($this->addSettings['document_root'].'/'.trim($match_arr['path'],'/')) ? $this->addSettings['domain_url'].'/'.trim($match_arr['path'],'/') : $match1;
+					}
+					$import_match = $match1;
 				}
-				$import_match = $match1;
 			}else{
 				$match1 = $url_parent_url.'/'.trim($match_arr['path'],'/');
 				$import_match = $url_parent_url.'/'.trim($match_arr['path'],'/');
@@ -204,7 +210,9 @@ class CssOptimize extends TwoSecond {
 				}
 			}
 			if(substr($match1, 0, 1) == '/' || substr($match1, 0, 4) == 'http'){
-				if($this->addSettings['image_cdn_url'] == $this->addSettings['site_url']){
+				if(substr($match1, 0, 4) == 'http') {
+					$replacement = 'url('.$quote.$match1.$quote.')';
+				} else if($this->addSettings['image_cdn_url'] == $this->addSettings['site_url']){
 					if($this->addSettings['is_multisite_sub_domain']){
 						$match1 = str_replace($this->addSettings['network_site_url'],$this->addSettings['site_url'],$match1);
 					}
