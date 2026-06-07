@@ -1,0 +1,32 @@
+name: Generate Latest Plugin ZIP
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Plugin ZIP
+        # Isse plugin files 'twosecond' folder ke andar pack ho jayengi, jo WordPress ke liye zaroori hai.
+        run: |
+          git archive --format zip --output twosecond.zip HEAD --prefix=twosecond/
+
+      - name: Update Latest Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          name: Latest Stable Version
+          files: twosecond.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
