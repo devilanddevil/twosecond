@@ -35,7 +35,7 @@ wp_add_inline_script(
 	<div class="top_panel_container">
 		<div class="top_panel d-none">
 			<div class="logo_container">
-				<img class="logo" src="<?php $twoSecond_admin->core->twosecond_esc_url_echo( TWOSECOND_URL . 'assets/images/Blinkspeed-logo-final-white.webp' ); ?>">
+				<img class="logo" src="<?php $twoSecond_admin->core->twosecond_esc_url_echo( TWOSECOND_URL . 'assets/images/twosecond-logo.png' ); ?>">
 			</div>
 
 			<div class="support_section">
@@ -65,7 +65,7 @@ wp_add_inline_script(
 				</button>
 			</div>
 			<div class="logo_container">
-				<img class="logo" src="<?php $twoSecond_admin->core->twosecond_esc_url_echo( TWOSECOND_URL . 'assets/images/Blinkspeed-logo-final-white.webp' ); ?>">
+				<img class="logo" src="<?php $twoSecond_admin->core->twosecond_esc_url_echo( TWOSECOND_URL . 'assets/images/twosecond-logo.png' ); ?>">
 			</div>
 			<?php include 'includes/tabs.php'; ?>
 			<div class="support_section">
