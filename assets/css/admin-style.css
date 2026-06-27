@@ -1,4 +1,5 @@
-li#toplevel_page_twosecond .wp-menu-image > img, li#toplevel_page_settings-page-twosecond .wp-menu-image > img {
+li#toplevel_page_twosecond .wp-menu-image>img,
+li#toplevel_page_settings-page-twosecond .wp-menu-image>img {
     opacity: 1;
     max-width: 19px;
     height: auto;
@@ -6,12 +7,14 @@ li#toplevel_page_twosecond .wp-menu-image > img, li#toplevel_page_settings-page-
     object-fit: contain;
 }
 
-li#toplevel_page_twosecond .wp-menu-image, li#toplevel_page_settings-page-twosecond .wp-menu-image {
+li#toplevel_page_twosecond .wp-menu-image,
+li#toplevel_page_settings-page-twosecond .wp-menu-image {
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.compat-field-optimize_image > td.field {
+
+.compat-field-optimize_image>td.field {
     display: flex;
     gap: 10px;
     flex-direction: row-reverse;
@@ -19,7 +22,7 @@ li#toplevel_page_twosecond .wp-menu-image, li#toplevel_page_settings-page-twosec
     align-items: center;
 }
 
-.compat-field-optimize_image > td.field > .loader-sec {
+.compat-field-optimize_image>td.field>.loader-sec {
     position: unset !important;
     margin: 0;
     width: 25px;
@@ -96,6 +99,7 @@ li#toplevel_page_twosecond .wp-menu-image, li#toplevel_page_settings-page-twosec
 #twosecond-deactivate-modal .popup-header {
     position: relative;
 }
+
 #twosecond-deactivate-modal button.close-modal {
     position: absolute;
     right: -15px;
@@ -104,25 +108,30 @@ li#toplevel_page_twosecond .wp-menu-image, li#toplevel_page_settings-page-twosec
     background: unset;
     border: unset;
 }
+
 #twosecond-deactivate-modal .popup-header h3 {
     font-size: 20px;
 }
-#twosecond-deactivate-modal + div#twosecond-modal-overlay {
+
+#twosecond-deactivate-modal+div#twosecond-modal-overlay {
     background-color: #00bcd454 !important;
     z-index: 9990;
     position: fixed;
     inset: 0;
 }
+
 #twosecond-deactivate-modal .popup-inner {
     text-align: center;
     max-width: 600px;
 }
+
 #twosecond-deactivate-modal p.text-center {
     color: #000;
     margin: 20px 0;
     font-size: 16px;
     max-width: 540px;
 }
+
 #twosecond-deactivate-modal button#twosecond-keep-data-btn {
     background: #11429C;
     color: #fff;
@@ -134,6 +143,7 @@ li#toplevel_page_twosecond .wp-menu-image, li#toplevel_page_settings-page-twosec
     cursor: pointer;
     transition: 0.3s;
 }
+
 #twosecond-deactivate-modal button#twosecond-remove-data-btn {
     padding: .4rem 1.25rem;
     border: 1px solid #11429C;
@@ -145,22 +155,27 @@ li#toplevel_page_twosecond .wp-menu-image, li#toplevel_page_settings-page-twosec
     cursor: pointer;
     transition: 0.3s;
 }
+
 #twosecond-deactivate-modal button#twosecond-keep-data-btn:hover {
     background: #018fa3;
 }
+
 #twosecond-deactivate-modal button#twosecond-remove-data-btn:hover {
     background: #00bcd41a;
 }
+
 #twosecond-deactivate-modal img.delete-gif {
     width: 90px;
 }
+
 #twosecond-deactivate-modal button.close-modal svg {
     height: 16px;
     width: 16px;
 }
 
-li#toplevel_page_twosecond .wp-menu-image > img, li#toplevel_page_settings-page-twosecond .wp-menu-image > img {
-    filter: brightness(0) invert(1);
+li#toplevel_page_twosecond .wp-menu-image>img,
+li#toplevel_page_settings-page-twosecond .wp-menu-image>img {
+    filter: brightness(1) invert(1);
     min-width: 25px;
 }
 
